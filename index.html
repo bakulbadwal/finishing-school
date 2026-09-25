@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Finishing School</title>
+<meta name="description" content="A hands-on lab for how a raw language model gets finished: chat templates, SFT and LoRA, DPO, and GRPO, drawn as a culinary finishing school.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M6 24l26-12 26 12-26 12z' fill='%23F4C430' stroke='%234A2E1E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M18 30v12c0 5 28 5 28 0V30' fill='%23C8452F' stroke='%234A2E1E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M54 26v14' stroke='%234A2E1E' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Grandstander:wght@700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<!--
+THESIS: Post-training is a culinary finishing school, drawn as a Busytown cross-section where every class, tool and cook wears its label. Sibling of Inference Kitchen; same design system.
+STORY: meet the school, then work its order ticket, red pen, sticky notes, tasting room, day-one photo and exam hall until you can finish a cook for three clients.
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><filter id="gouache" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="3" result="w"/><feDisplacementMap in="SourceGraphic" in2="w" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter></defs></svg>
+<div class="wrap">
+<header>
+  <div class="mast"><b>Finishing School</b><span>a hands-on lab</span></div>
+  <div><h1>How a raw model gets finished</h1>
+  <p class="sub">A pretrained model is a cook who can make anything but has no manners, no taste and no rigor. Three classes finish it: copying worked examples (SFT), comparing two plates (DPO) and sitting a marked exam (GRPO). About 90 minutes of play.</p></div>
+</header>
+
+<nav id="nav" aria-label="Steps"></nav>
+
+<!-- ============ STEP 0 ============ -->
+<section id="s0" data-title="The Ladder" data-n="0">
+  <div class="card">
+    <div class="scene" data-art="s0"></div>
+    <h2>0 · The ladder: three classes, three signals</h2>
+    <p class="lede">After <span class="g" data-g="pretraining">pretraining</span>, a model is a <b>young cook</b> who can continue any recipe but rambles, ignores the order and has no taste. That's a <span class="g" data-g="base">base model</span>. The finishing school has three classes, one per floor, and each one teaches from a different kind of signal. Every term with a wavy red underline is tappable: hover or tap it for the plain meaning and its school equivalent.</p>
+    <div class="kmap">
+      <div><span class="k" data-i="cook" aria-hidden="true"></span><b>The model</b> = the cook<br><span class="t">can already cook anything; needs finishing</span></div>
+      <div><span class="k" data-i="plates" aria-hidden="true"></span><b>Worked examples</b> = the master's plates<br><span class="t">copied in the copying class (<span class="g" data-g="sft">SFT</span>)</span></div>
+      <div><span class="k" data-i="ticket" aria-hidden="true"></span><b><span class="g" data-g="template">Chat template</span></b> = the order ticket<br><span class="t">labelled boxes: system, user, assistant, think, tools</span></div>
+      <div><span class="k" data-i="pen" aria-hidden="true"></span><b><span class="g" data-g="mask">Loss mask</span></b> = the red pen<br><span class="t">grades only the answer box</span></div>
+      <div><span class="k" data-i="note" aria-hidden="true"></span><b><span class="g" data-g="lora">LoRA</span></b> = sticky notes<br><span class="t">a small pad on the recipe book; peel off to undo</span></div>
+      <div><span class="k" data-i="taste" aria-hidden="true"></span><b><span class="g" data-g="dpo">DPO</span></b> = the tasting room<br><span class="t">two plates, a finger pointing at the better one</span></div>
+      <div><span class="k" data-i="photo" aria-hidden="true"></span><b><span class="g" data-g="reference">Reference model</span></b> = the day-one photo<br><span class="t">taken on the first day of this class (usually the SFT checkpoint), pinned on the wall</span></div>
+      <div><span class="k" data-i="leash" aria-hidden="true"></span><b><span class="g" data-g="beta">β</span></b> = the leash<br><span class="t">ties the cook to the photo; higher β, shorter leash</span></div>
+      <div><span class="k" data-i="thermo" aria-hidden="true"></span><b><span class="g" data-g="grpo">GRPO</span></b> = the exam hall<br><span class="t">every answer gets a score; here a thermometer (<span class="g" data-g="verifier">verifier</span>) reads 0 or 1</span></div>
+    </div>
+    <p class="covers">Covers <b>smol course Units 1–2 · overview</b> · <b>HF LLM Course ch. 11–12 · intros</b> · <b>RLHF Book ch. 3</b> (the training overview)</p>
+  </div>
+
+  <div class="card">
+    <h3>Put each signal on its rung</h3>
+    <p class="lede sm">Tap a signal card, then tap the floor that learns from it. (On a computer you can also drag.) The right floor lights up.</p>
+    <div class="ladder">
+      <div class="sigs" id="s0sigs" aria-label="Signal cards"></div>
+      <div class="rungs" id="s0rungs" aria-label="Floors of the school"></div>
+    </div>
+    <div class="callout co-i" id="s0out">Pick a card first.</div>
+  </div>
+
+  <div class="card">
+    <h3>One prompt, four cooks <span class="muted h3note">(illustrative outputs)</span></h3>
+    <p class="lede sm">The same cook, after each class. These outputs are written to show the typical behaviour, not generated by a real model.</p>
+    <div class="seg" id="s0cook"></div>
+    <div class="cookout" id="s0cookout"></div>
+    <div class="predict" data-p="s0a">
+      <div class="tag">Guess first!</div>
+      <div class="q">Which class needs a program that can check the answer automatically?</div>
+      <div class="opts"><button data-a="0">SFT</button><button data-a="1">DPO</button><button data-a="2" data-right>GRPO</button></div>
+      <div class="why">GRPO, <i>as used for reasoning</i> (<span class="g" data-g="rlvr">RLVR</span>). There the exam hall scores every answer with a <b>verifier</b>: a program that checks it, such as a math checker, unit tests or running a SQL query. It reads 0 or 1 with no opinions. GRPO itself only needs <b>a score per answer</b>, so it can also use a learned reward model instead (DeepSeekMath, which introduced GRPO, did). SFT only needs answers to copy, and DPO only needs a person's choice between two answers.</div>
+    </div>
+    <div class="say" data-say="s0">
+      <div class="tag">Say it out loud</div>
+      <div class="line">Each class learns from a different signal: copying examples, comparing two answers, or scoring the cook's own answers, often with a checker. They stack; they don't replace each other.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEP 1 ============ -->
+<section id="s1" data-title="The Order Ticket" data-n="1">
+  <div class="card">
+    <div class="scene" data-art="s1"></div>
+    <h2>1 · The order ticket: chat templates</h2>
+    <p class="lede">A model never sees "messages". It sees one long string of <span class="g" data-g="token">tokens</span>. The <span class="g" data-g="template">chat template</span> is the printed order ticket that turns a conversation into that string, with <span class="g" data-g="special">special tokens</span> as the box borders. Each model family prints its own ticket. Fill one in and watch it render.</p>
+    <p class="covers">Covers <b>smol Unit 1 · Chat Templates</b> · <b>HF LLM Course 11.2</b> · <b>RLHF Book ch. 4</b> · SmolLM3-3B model card</p>
+  </div>
+  <div class="card">
+    <div class="pg">
+      <div class="panel">
+        <div class="lbl">System box</div>
+        <input type="text" class="wide" id="s1sys" value="You are a helpful assistant." aria-label="System prompt">
+        <div class="btnrow"><button class="ghost" id="s1addno" type="button">add /no_think</button><button class="ghost" id="s1addthink" type="button">add /think</button><button class="ghost" id="s1clr" type="button">clear flags</button></div>
+        <div class="lbl">User box</div>
+        <input type="text" class="wide" id="s1user" value="How long should I rest a steak?" aria-label="User message">
+        <div class="lbl">Ticket dialect</div><div class="seg" id="s1dia"></div>
+        <label class="tg"><input type="checkbox" id="s1think" checked><span class="sw"></span><span><code>enable_thinking=True</code></span></label>
+        <label class="tg"><input type="checkbox" id="s1tool"><span class="sw"></span>Add a tool (<code>get_weather</code>)</label>
+      </div>
+      <div>
+        <div class="lbl">The ticket as the model sees it · <b>teaching skeleton, not byte-exact</b></div>
+        <div class="toks tstrip" id="s1strip" aria-live="polite"></div>
+        <div class="legend"><span><i style="background:var(--brick)"></i>special token</span><span><i style="background:var(--yellow)"></i>role name</span><span><i style="background:#FFF6DC"></i>template's own text</span><span><i style="background:var(--sheet)"></i>your text</span><span><i style="background:var(--lilac)"></i>think / tools</span></div>
+        <div class="grid g3" style="margin-top:12px">
+          <div class="stat big"><div class="v" id="s1mode"></div><div class="l">SmolLM3 <span class="g" data-g="thinking">thinking</span></div></div>
+          <div class="stat"><div class="v acc" id="s1why"></div><div class="l">why</div></div>
+          <div class="stat"><div class="v gold" id="s1n"></div><div class="l">special tokens on this ticket</div></div>
+        </div>
+        <div class="callout co-i" id="s1note"></div>
+      </div>
+    </div>
+    <div class="predict" data-p="s1a">
+      <div class="tag">Guess first!</div>
+      <div class="q">The system prompt says <code>/no_think</code>, but the code passes <code>enable_thinking=True</code>. Does SmolLM3 think?</div>
+      <div class="opts"><button data-a="0">Yes: the code keyword wins</button><button data-a="1" data-right>No: the system-prompt flag wins</button><button data-a="2">It does both</button></div>
+      <div class="why">No. On SmolLM3 <b>the flag in the system prompt beats the keyword</b> (per the model card). The template writes <code>Reasoning Mode: /no_think</code> and ends the ticket with an empty <code>&lt;think&gt;&lt;/think&gt;</code> box, so the model sees "thinking already happened" and answers directly. Try it above: add <code>/no_think</code>, leave the switch on.</div>
+    </div>
+    <div class="predict" data-p="s1b">
+      <div class="tag">Guess first!</div>
+      <div class="q">You fine-tune on Llama-3.1-format tickets, then serve the model with ChatML tickets. What happens?</div>
+      <div class="opts"><button data-a="0">Nothing, it's the same text</button><button data-a="1" data-right>Answers degrade</button><button data-a="2">It refuses to load</button></div>
+      <div class="why">Answers degrade. The model learned that a turn ends at <code>&lt;|eot_id|&gt;</code> and a role sits between header markers. At serving time it sees <code>&lt;|im_start|&gt;</code> markers it never learned to read, so it runs on past the end of its turn, mixes up roles or ignores the system box. Nothing crashes, which is why this bug is easy to miss. Switch the dialect above to compare the two tickets.</div>
+    </div>
+    <div class="say" data-say="s1">
+      <div class="tag">Say it out loud</div>
+      <div class="line">The template is the model's grammar: train and serve on the same one. On SmolLM3, the system-prompt flag beats the keyword.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEP 2 ============ -->
+<section id="s2" data-title="Grading the Answer" data-n="2">
+  <div class="card">
+    <div class="scene" data-art="s2"></div>
+    <h2>2 · Grading the answer: loss masking</h2>
+    <p class="lede"><span class="g" data-g="sft">SFT</span> uses the same <span class="g" data-g="loss">loss</span> as pretraining: for each token, how surprised the model was by the right next token (−ln p), averaged. The only new decision is <b>which tokens get graded</b>. With the <span class="g" data-g="mask">loss mask</span> on, the teacher's red pen skips the customer's order the cook copied down and grades only the answer. Tap a token to change how likely the cook found it.</p>
+    <p class="covers">Covers <b>smol Unit 1 · Supervised Fine-Tuning</b> · <b>HF LLM Course 11.3</b> · <b>RLHF Book ch. 4</b></p>
+  </div>
+  <div class="card">
+    <label class="tg"><input type="checkbox" id="s2mask"><span class="sw"></span><span>Grade only the answer (completion-only loss)</span></label>
+    <div class="btnrow"><button class="ghost" id="s2reset" type="button">Back to the default probabilities</button></div>
+    <div class="lbl">Customer's order (prompt) · cook's answer (completion). Bar height = surprise, −ln p. Tap a token to cycle its p.</div>
+    <div class="lstrip" id="s2strip"></div>
+    <div class="grid g3" style="margin-top:12px">
+      <div class="stat big"><div class="v gold" id="s2loss"></div><div class="l">loss (average surprise)</div></div>
+      <div class="stat"><div class="v" id="s2n"></div><div class="l">tokens graded</div></div>
+      <div class="stat"><div class="v acc" id="s2sum"></div><div class="l">total surprise on graded tokens</div></div>
+    </div>
+    <div class="callout co-i" id="s2note"></div>
+    <div class="predict" data-p="s2a">
+      <div class="tag">Guess first!</div>
+      <div class="q">Turn on "grade only the answer". Does the loss go up or down?</div>
+      <div class="opts"><button data-a="0" data-right>Down</button><button data-a="1">Up</button><button data-a="2">Stays the same</button></div>
+      <div class="why">Down, from <b>1.38 to 0.77</b> with the defaults. The two prompt tokens were the most surprising (p = 0.1), and they no longer count. But the lower number isn't "better training". It's <b>measuring a different thing</b>: the cook is no longer graded on guessing the customer's order, only on the answer. Masked and unmasked losses can't be compared with each other.</div>
+    </div>
+    <div class="say" data-say="s2">
+      <div class="tag">Say it out loud</div>
+      <div class="line">SFT is next-token cross-entropy, and the mask decides what the cook is graded on.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEP 3 ============ -->
+<section id="s3" data-title="Sticky Notes" data-n="3">
+  <div class="card">
+    <div class="scene" data-art="s3"></div>
+    <h2>3 · Sticky notes: LoRA and training memory</h2>
+    <p class="lede">A <span class="g" data-g="fullft">full fine-tune</span> rewrites the whole recipe book, and every weight being rewritten needs its gradient and <span class="g" data-g="optimizer">optimizer state</span> in memory. <span class="g" data-g="lora">LoRA</span> freezes the book and adds a small pad of sticky notes (an <span class="g" data-g="adapter">adapter</span>) on a few kinds of page. The pad's size is the <span class="g" data-g="rank">rank r</span>. Pick a model and a machine budget and see what fits.</p>
+    <p class="covers">Covers <b>smol Unit 1 · LoRA and PEFT</b> · <b>HF LLM Course 11.4</b> · <b>LoRA paper</b> (Hu et al. 2021) · shapes from each model's config.json</p>
+  </div>
+  <div class="card">
+    <div class="pg">
+      <div class="panel">
+        <div class="lbl">Model</div><div class="seg" id="s3model"></div>
+        <div class="lbl">How to train it</div><div class="seg" id="s3mode"></div>
+        <div id="s3lora">
+          <div class="lbl">Rank r (pad size)</div><div class="seg" id="s3r"></div>
+          <div class="lbl">Which pages get notes (target modules)</div>
+          <div class="mods" id="s3mods"></div>
+        </div>
+        <div class="lbl">Sequence length (tokens per example)</div><div class="seg" id="s3seq"></div>
+        <label class="tg"><input type="checkbox" id="s3ckpt" checked><span class="sw"></span><span><span class="g" data-g="checkpointing">Gradient checkpointing</span></span></label>
+        <div class="tagcard">
+          <div class="tagt">Price per trained weight</div>
+          <div class="tagrow"><span>weights (<span class="g" data-g="bf16">bf16</span>)</span><b>2 B</b></div>
+          <div class="tagrow"><span>gradients (bf16)</span><b>2 B</b></div>
+          <div class="tagrow"><span>fp32 master copy</span><b>4 B</b></div>
+          <div class="tagrow"><span>AdamW m and v (fp32)</span><b>8 B</b></div>
+          <div class="tagrow tot"><span>per trainable parameter</span><b id="s3bpp"></b></div>
+          <div class="tagrow"><span>a frozen weight (bf16, no grads)</span><b id="s3bfz"></b></div>
+        </div>
+      </div>
+      <div>
+        <div class="grid g3">
+          <div class="stat"><div class="v" id="s3tot"></div><div class="l">parameters in the model</div></div>
+          <div class="stat big"><div class="v acc" id="s3tr"></div><div class="l">trainable parameters</div></div>
+          <div class="stat"><div class="v gold" id="s3pct"></div><div class="l">of the model trained</div></div>
+        </div>
+        <div class="lbl" style="margin-top:12px">Training memory: <b id="s3gb"></b> <span class="muted">(ticks = what each machine can use)</span></div>
+        <div class="mbar" id="s3bar" role="img" aria-label="Training memory bar"></div>
+        <div class="mticks" id="s3ticks" aria-hidden="true"></div>
+        <div class="legend"><span><i style="background:var(--steel)"></i>frozen weights <b id="s3lfz"></b></span><span><i style="background:var(--yellow)"></i>trainable state (weights + grads + optimizer) <b id="s3lts"></b></span><span><i style="background:var(--sky)"></i><span class="g" data-g="activations">activations</span> · teaching estimate <b id="s3lac"></b></span></div>
+        <div class="chips" id="s3fits"></div>
+        <div class="lbl" style="margin-top:12px">Notes per kind of page, across all layers: r × (d_in + d_out) × layers</div>
+        <div class="modtab" id="s3tab"></div>
+        <div class="callout co-i" id="s3note"></div>
+      </div>
+    </div>
+    <div class="predict" data-p="s3a">
+      <div class="tag">Guess first!</div>
+      <div class="q">A full fine-tune of SmolLM3-3B. Which machine fits it?</div>
+      <div class="opts"><button data-a="0">Colab T4 (16 GB)</button><button data-a="1">The 36 GB Mac</button><button data-a="2">A100 40 GB</button><button data-a="3" data-right>None of them</button></div>
+      <div class="why">None. 3.08 billion parameters × 16 bytes = <b>about 49 GB</b> of weights, gradients and optimizer state before a single activation, which is more than even the 40 GB A100. Switch to LoRA with r = 16 and the same model needs about 7.5 GB: the frozen book at 2 bytes a weight, plus a small pad.</div>
+    </div>
+    <div class="predict" data-p="s3b">
+      <div class="tag">Guess first!</div>
+      <div class="q">Double r from 16 to 32. What happens to the trainable parameters?</div>
+      <div class="opts"><button data-a="0">Go up ×4</button><button data-a="1" data-right>Exactly double</button><button data-a="2">Go up a little</button></div>
+      <div class="why">Exactly double. Each adapted matrix gets two thin matrices, d_in × r and r × d_out, so its count is <b>r × (d_in + d_out)</b>: linear in r. On Qwen3-1.7B with all seven modules, 17.4M becomes 34.9M. Memory barely moves, because the frozen book dominates.</div>
+    </div>
+    <div class="say" data-say="s3">
+      <div class="tag">Say it out loud</div>
+      <div class="line">LoRA trains about 1% of the weights for a 2–3B model at rank 16 (more for small models or high rank: try it). Full fine-tuning costs about 16 bytes per parameter, which is why a 3B full fine-tune doesn't fit a 12–16 GB card and LoRA does.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEP 4 ============ -->
+<section id="s4" data-title="The Tasting Room" data-n="4">
+  <div class="card">
+    <div class="scene" data-art="s4"></div>
+    <h2>4 · The tasting room: DPO</h2>
+    <p class="lede">In <span class="g" data-g="dpo">DPO</span> a taster puts two plates side by side and points at the better one: a <span class="g" data-g="pair">preference pair</span>. There's no scorecard. The reward is <span class="g" data-g="implicit">implicit</span>: <b>β × how much more likely the cook now makes a plate than the <span class="g" data-g="reference">day-one photo</span> would have</b>. Each input below is a sequence <span class="g" data-g="logprob">log-probability</span> (the sum over the answer's tokens, so a negative number).</p>
+    <p class="covers">Covers <b>smol Unit 2 · Direct Preference Optimization</b> · <b>RLHF Book ch. 8</b> · <b>DPO paper</b> (Rafailov et al. 2023)</p>
+  </div>
+  <div class="card">
+    <div class="pg">
+      <div class="panel">
+        <div class="sl"><div class="sl-h"><span>Cook now: chosen plate ★</span><b id="s4pcv"></b></div><input type="range" id="s4pc" min="-30" max="0" step="0.5" value="-10" aria-label="Policy log-prob of chosen"></div>
+        <div class="sl"><div class="sl-h"><span>Day one: chosen plate ★</span><b id="s4rcv"></b></div><input type="range" id="s4rc" min="-30" max="0" step="0.5" value="-12" aria-label="Reference log-prob of chosen"></div>
+        <div class="sl"><div class="sl-h"><span>Cook now: rejected plate ✗</span><b id="s4prv"></b></div><input type="range" id="s4pr" min="-30" max="0" step="0.5" value="-14" aria-label="Policy log-prob of rejected"></div>
+        <div class="sl"><div class="sl-h"><span>Day one: rejected plate ✗</span><b id="s4rrv"></b></div><input type="range" id="s4rr" min="-30" max="0" step="0.5" value="-13" aria-label="Reference log-prob of rejected"></div>
+        <div class="sl"><div class="sl-h"><span><span class="g" data-g="beta">β</span> (the leash)</span><b id="s4bv"></b></div><input type="range" id="s4b" min="0" max="8" step="1" value="3" aria-label="Beta"></div>
+        <div class="btnrow"><button class="ghost" id="s4day1" type="button">Back to day one</button><button class="ghost" id="s4def" type="button">Defaults</button></div>
+      </div>
+      <div>
+        <div class="seesaw" id="s4saw" role="img" aria-label="Balance showing the reward margin"></div>
+        <div class="grid g3">
+          <div class="stat"><div class="v good" id="s4rwc"></div><div class="l">implicit reward, chosen</div></div>
+          <div class="stat"><div class="v bad" id="s4rwr"></div><div class="l">implicit reward, rejected</div></div>
+          <div class="stat big"><div class="v acc" id="s4m"></div><div class="l"><span class="g" data-g="margin">margin</span></div></div>
+          <div class="stat"><div class="v" id="s4p"></div><div class="l">P(chosen wins) = <span class="g" data-g="sigmoid">σ</span>(margin)</div></div>
+          <div class="stat big"><div class="v gold" id="s4l"></div><div class="l">loss = −ln σ(margin)</div></div>
+          <div class="stat"><div class="v" id="s4g"></div><div class="l">σ(−margin): the pair's weight in the gradient (times β)</div></div>
+        </div>
+        <div class="callout co-i" id="s4note"></div>
+        <div class="callout co-w"><b>A known conflict.</b> The smol course's Unit 2 table says lower β means closer to the reference. The DPO paper says the opposite: β is the strength of the leash. We follow the paper: <b>higher β = shorter leash</b>.</div>
+      </div>
+    </div>
+    <div class="predict" data-p="s4a">
+      <div class="tag">Guess first!</div>
+      <div class="q">On the very first step of any DPO run, what's the loss?</div>
+      <div class="opts"><button data-a="0">0</button><button data-a="1" data-right>0.693</button><button data-a="2">It depends on β</button><button data-a="3">1</button></div>
+      <div class="why"><b>0.693 = ln 2</b>, whatever β is. On step one the cook <i>is</i> the day-one photo, so both log-ratios are 0, the margin is 0, σ(0) = 0.5 and −ln 0.5 = ln 2. Press "Back to day one" and move β: the loss doesn't budge. If your first logged loss isn't near 0.693, something is wrong before training starts.</div>
+    </div>
+    <div class="predict" data-p="s4b">
+      <div class="tag">Guess first!</div>
+      <div class="q">Keep the cook's drift fixed and raise β from 0.1 to 0.5. Does the loss go up or down, and what does that mean for the leash?</div>
+      <div class="opts"><button data-a="0">Up: a longer leash</button><button data-a="1" data-right>Down: a shorter leash</button><button data-a="2">No change</button></div>
+      <div class="why">Down (0.554 → 0.201 with the defaults). The same drift from day one now counts for five times as much margin, so the taster is satisfied with <b>less</b> drift. The cook reaches a low loss while staying closer to the photo: a <b>shorter leash</b>. That's the paper's reading, and it's why raising β is the fix when DPO outputs drift into odd, repetitive text.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>A batch of eight pairs, mid-training</h3>
+    <p class="lede sm"><span class="g" data-g="trl">TRL</span> logs two numbers for a DPO batch: <b>reward accuracy</b> (the share of pairs where the chosen plate has the higher implicit reward) and the <b>mean margin</b>. Press the step button to nudge every pair. Pairs that are still wrong push hardest.</p>
+    <div class="callout co-w" style="margin-top:0"><b>Teaching animation, not a real optimizer:</b> each step adds 0.5 × (how hard the pair pushes) to the chosen log-prob and subtracts the same from the rejected one. It uses the β set above.</div>
+    <div class="btnrow"><button class="act" id="s4step" type="button">One training step</button><button class="ghost" id="s4breset" type="button">Reset the batch</button><span class="muted hand" id="s4steps"></span></div>
+    <div class="tscroll"><table class="ptab" id="s4tab"></table></div>
+    <div class="grid g3" style="margin-top:12px">
+      <div class="stat big"><div class="v good" id="s4acc"></div><div class="l">reward accuracy (rewards/accuracies)</div></div>
+      <div class="stat big"><div class="v acc" id="s4mm"></div><div class="l">mean margin (rewards/margins)</div></div>
+      <div class="stat"><div class="v gold" id="s4ml"></div><div class="l">mean loss</div></div>
+    </div>
+    <div class="say" data-say="s4">
+      <div class="tag">Say it out loud</div>
+      <div class="line">DPO's reward is implicit: β times how much more likely the cook now makes the plate than on day one. The loss starts at 0.693, and higher β is a shorter leash.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEP 5 ============ -->
+<section id="s5" data-title="The Day-One Photo" data-n="5">
+  <div class="card">
+    <div class="scene" data-art="s5"></div>
+    <h2>5 · The day-one photo: the reference model and the bill</h2>
+    <p class="lede">Every method that measures drift needs the <span class="g" data-g="reference">reference model</span>'s opinion of each answer, and every opinion is a forward pass. Count the footsteps each training example costs, and how many copies of the model sit in memory.</p>
+    <p class="covers">Covers <b>smol Unit 2 · DPO Hands-on</b> · <b>RLHF Book ch. 8 &amp; 15</b> (regularization) · TRL docs</p>
+  </div>
+  <div class="card">
+    <div class="pg">
+      <div class="panel">
+        <div class="lbl">Method</div><div class="seg" id="s5m"></div>
+        <div id="s5opts">
+          <label class="tg" id="s5loraw"><input type="checkbox" id="s5lora"><span class="sw"></span><span><span class="g" data-g="lora">LoRA</span> adapter</span></label>
+          <label class="tg" id="s5prew"><input type="checkbox" id="s5pre"><span class="sw"></span><span>Precompute reference log-probs</span></label>
+          <div id="s5gw"><div class="lbl">Group size G</div><div class="seg" id="s5g"></div></div>
+          <label class="tg" id="s5klw"><input type="checkbox" id="s5kl"><span class="sw"></span><span><span class="g" data-g="kl">KL</span> on (β &gt; 0)</span></label>
+        </div>
+        <div class="callout co-i" id="s5hint"></div>
+      </div>
+      <div>
+        <div class="steps" id="s5steps"></div>
+        <div class="grid g3" style="margin-top:12px">
+          <div class="stat big"><div class="v gold" id="s5tot"></div><div class="l">passes per example (forward + backward + reference)</div></div>
+          <div class="stat"><div class="v acc" id="s5gen"></div><div class="l">answers generated per example</div></div>
+          <div class="stat big"><div class="v" id="s5cp"></div><div class="l">model copies in memory</div></div>
+        </div>
+        <div class="callout co-i" id="s5note"></div>
+      </div>
+    </div>
+    <div class="predict" data-p="s5a">
+      <div class="tag">Guess first!</div>
+      <div class="q">With LoRA on, how many copies of the model does DPO keep in memory?</div>
+      <div class="opts"><button data-a="0" data-right>One</button><button data-a="1">Two</button><button data-a="2">Three</button></div>
+      <div class="why">One. With LoRA, the reference is <b>the same weights with the sticky notes peeled off</b>: switch the adapter off, run the reference forward pass, switch it back on. The two reference passes still run, but on the one copy. Without LoRA (and without precomputing), DPO needs a second full frozen copy. One catch: if your SFT step was itself a LoRA adapter, merge it first (or use <span class="g" data-g="trl">TRL</span>'s <code>ref_adapter_name</code>), otherwise peeling the notes gives you the base model, not the SFT cook.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>What the bill looks like <span class="muted h3note">(counted from the loss)</span></h3>
+    <div class="grid g2">
+      <div class="quote"><div class="qn">DPO ≈ 2 × SFT per example</div><div class="qs">Counted from the loss, not timed. Once the reference log-probs are cached, two answers each get a forward and a backward pass, against SFT's one. TRL's <code>precompute_ref_log_probs</code> does the caching.</div></div>
+      <div class="quote"><div class="qn">GRPO ≈ G × SFT <span>plus</span> sampling</div><div class="qs">Also counted from the loss. Each of the G answers gets a forward and a backward pass, and all G have to be generated first, one token at a time. Generation is usually the bigger bill.</div></div>
+    </div>
+    <div class="say" data-say="s5">
+      <div class="tag">Say it out loud</div>
+      <div class="line">DPO costs about twice SFT per example once the reference scores are cached, and with LoRA the reference is just the same weights with the notes peeled off.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEP 6 ============ -->
+<section id="s6" data-title="The Exam Hall" data-n="6">
+  <div class="card">
+    <div class="scene" data-art="s6"></div>
+    <h2>6 · The exam hall: GRPO</h2>
+    <p class="lede">In <span class="g" data-g="grpo">GRPO</span> the cook plates a <span class="g" data-g="group">group</span> of G answers to the same exam question. A <span class="g" data-g="verifier">checking machine</span> stamps each one: 1 for the right number, a small extra stamp for neat format. Then each plate is graded <b>against the group's own average</b>, its <span class="g" data-g="advantage">advantage</span>. There's no second examiner (<span class="g" data-g="critic">critic</span>) on the payroll. Scoring with a checker makes this <span class="g" data-g="rlvr">RLVR</span>, the recipe behind reasoning models such as DeepSeek-R1. GRPO itself takes any score per answer, so the stamp could also come from a learned reward model, as in DeepSeekMath, which introduced GRPO.</p>
+    <p class="covers">Covers <b>HF LLM Course 12.3–12.4</b> · <b>RLHF Book ch. 6–7</b> · <b>DeepSeekMath</b> (Shao et al. 2024)</p>
+  </div>
+  <div class="card">
+    <div class="examq"><b>Exam question:</b> Solve 2 + 3 × 4. Show your work in <code>&lt;think&gt;</code>, then the answer in <code>&lt;answer&gt;</code>. <span class="muted">(Right answer: 14.)</span></div>
+    <div class="row" style="margin-top:8px">
+      <div><div class="lbl">Group size G</div><div class="seg" id="s6g"></div></div>
+      <div class="wts"><label>accuracy reward <input type="number" id="s6wa" value="1" step="0.1" min="0" max="5" inputmode="decimal"></label><label>format reward <input type="number" id="s6wf" value="0.5" step="0.1" min="0" max="5" inputmode="decimal"></label></div>
+    </div>
+    <div class="lbl">Divide by the group's spread?</div><div class="seg" id="s6scale"></div>
+    <div class="btnrow"><button class="ghost" id="s6c12" type="button">Worked example</button><button class="ghost" id="s6all" type="button">Everyone gets it right</button></div>
+    <div class="plates" id="s6plates"></div>
+    <div class="advchart" id="s6chart" role="img" aria-label="Advantage of each plate around the group mean"></div>
+    <div class="grid g3" style="margin-top:12px">
+      <div class="stat"><div class="v gold" id="s6mean"></div><div class="l">group mean reward (the chalk line)</div></div>
+      <div class="stat"><div class="v" id="s6std"></div><div class="l">sample std (n − 1)</div></div>
+      <div class="stat big"><div class="v acc" id="s6teach"></div><div class="l">plates that move the cook</div></div>
+    </div>
+    <div class="callout co-i">Advantage = (reward − group mean) ÷ (sample std + 1e-4): the <b>sample std (n − 1) plus TRL's 1e-4</b>, as TRL computes it. "Worked example" loads a hand-worked example (4 answers, accuracy + format rewards): o1 shows <b>+1.305</b>; without TRL's 1e-4 it would be 1.306. Answer "no" to the spread question and the advantage is just reward − group mean.</div>
+    <div class="predict" data-p="s6a">
+      <div class="tag">Guess first!</div>
+      <div class="q">All 8 plates are correct and neat. How much does the cook learn from this question?</div>
+      <div class="opts"><button data-a="0">A lot: they're all right</button><button data-a="1" data-right>Nothing</button><button data-a="2">A little</button></div>
+      <div class="why">Nothing. Every reward equals the group mean, so every advantage is <b>0</b> (the 1e-4 keeps it from dividing by zero). GRPO only learns from <b>differences inside a group</b>. Questions the cook always gets right, or always gets wrong, teach nothing, which is why reasoning datasets are filtered to questions the model sometimes solves. Set G = 8, then press "Everyone gets it right".</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>A trivial gap shouts louder: the spread divisor</h3>
+    <p class="lede sm">Two exam questions, four plates each. On the first, every plate is right and one is slightly messier: rewards 1, 1, 1, 0.9. On the second, half are right: 1, 0, 1, 0. Watch each question's lowest plate (outlined) as you flip "Divide by the group's spread?" above. Dividing by the spread makes a trivial 0.1 gap push harder than a real right/wrong gap. That's the difficulty/noise bias <span class="g" data-g="drgrpo">Dr. GRPO</span> removes.</p>
+    <div class="grid g2" id="s6cmp"></div>
+    <div class="callout co-i"><b>Dr. GRPO is two changes, not one.</b> Liu et al. (2025) (a) stop dividing by the group's std and (b) stop normalising each answer's loss by its length, which lets long wrong answers off lightly. In <span class="g" data-g="trl">TRL</span> that's <code>scale_rewards="none"</code> plus <code>loss_type="dr_grpo"</code>. TRL's current defaults are <code>scale_rewards="group"</code> and <code>loss_type="dapo"</code>. This page shows only the std half.</div>
+  </div>
+  <div class="card">
+    <h3>The speed bump: clipping the update (ε)</h3>
+    <p class="lede sm">Each plate's probability under the <span class="g" data-g="policy">policy</span> has moved from π<sub>old</sub> (the policy that sampled it) to π<sub>new</sub>. The <span class="g" data-g="clip">clip</span> caps the ratio at 1 ± ε inside the objective: the term is min(ratio × A, clipped ratio × A). When the clip changes the term, the "clip bit" lights. Plates o1–o4 of the current group; load the worked example for its numbers.</p>
+    <div class="callout co-w">The clip only bites when a generated batch is reused for more than one update (<code>num_iterations</code> &gt; 1, or several optimizer steps per generation); the numbers here show a reused batch. On TRL's default <code>num_iterations=1</code>, π<sub>old</sub> = π, the ratio is 1 and the clip never bites.</div>
+    <div class="sl" style="max-width:360px"><div class="sl-h"><span>ε (speed-bump height)</span><b id="s6ev"></b></div><input type="range" id="s6e" min="0.05" max="0.5" step="0.05" value="0.2" aria-label="Clip epsilon"></div>
+    <div class="tscroll"><table class="ptab" id="s6clip"></table></div>
+  </div>
+  <div class="card">
+    <div class="grid g2">
+      <div>
+        <h3>The day-one leash (KL)</h3>
+        <div class="callout co-w" style="margin-top:0">TRL's current default <b>β = 0</b>: the day-one leash is unhooked unless you set it, and no reference model is loaded. DeepSeekMath used <b>0.04</b>. The clip limits each step; the <span class="g" data-g="kl">KL</span> term limits total drift. On TRL's defaults neither brake is engaged: β = 0 unhooks the leash, and with <code>num_iterations=1</code> each generated batch is used for one update, so π<sub>old</sub> = π, the ratio is 1 and the clip never bites.</div>
+      </div>
+      <div>
+        <h3>PPO vs GRPO: networks to keep</h3>
+        <div class="nets">
+          <div class="netrow"><b><span class="g" data-g="ppo">PPO</span></b><span class="net">policy</span><span class="net">critic</span><span class="net">reward model<br><i>if learned</i></span><span class="net">reference</span></div>
+          <div class="netrow"><b>GRPO</b><span class="net">policy</span><span class="net off">reward model<br><i>if learned</i></span><span class="net off">reference<br><i>only if β &gt; 0</i></span></div>
+        </div>
+        <p class="muted hand mt8">No critic: the group is the baseline.</p>
+      </div>
+    </div>
+    <div class="predict" data-p="s6b">
+      <div class="tag">Guess first!</div>
+      <div class="q">Where does GRPO get the baseline that PPO gets from a critic?</div>
+      <div class="opts"><button data-a="0">From the reference model</button><button data-a="1" data-right>From the group's own average reward</button><button data-a="2">From a reward model</button></div>
+      <div class="why">From the group. PPO trains a second network to predict how well an answer should do, and subtracts that prediction. GRPO samples G answers to the same prompt and subtracts <b>their average</b>: arithmetic, recomputed every batch, with no second network to train or keep in memory.</div>
+    </div>
+    <div class="say" data-say="s6">
+      <div class="tag">Say it out loud</div>
+      <div class="line">The group is the critic: each plate is graded against its siblings' average. A group that all scores the same teaches nothing, and on current TRL the KL leash is off unless you set β.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CAPSTONE ============ -->
+<section id="cap" data-title="Graduation" data-n="★">
+  <div class="card">
+    <div class="scene" data-art="cap"></div>
+    <h2>★ · Graduation: finish a cook for three clients</h2>
+    <p class="lede">Three clients come to hire a graduate. For each, pick the class, the model, LoRA or full, and the machine, then grade the plan. It's scored with the same math as steps 1–6: is it the right class for the <b>signal the client already has</b>, is there enough data, does it fit the machine, and is it within budget? Memory is estimated at r = 16, sequence 1,024, batch 1, with checkpointing.</p>
+    <p class="covers">Covers <b>smol Units 1–2</b> · <b>HF LLM Course ch. 11–12</b> · <b>RLHF Book ch. 4, 6–8</b></p>
+    <div class="gradstamp" id="capstamp" hidden>Graduated · all three clients hired</div>
+  </div>
+  <div id="capbriefs"></div>
+  <div class="card">
+    <div class="predict" data-p="capa">
+      <div class="tag">Guess first!</div>
+      <div class="q">The headline client offers only the 50 pairs its editors labelled this week. Can you DPO on those?</div>
+      <div class="opts"><button data-a="0">Yes, DPO is data-efficient</button><button data-a="1" data-right>No: too few pairs</button><button data-a="2">Yes, with a higher β</button></div>
+      <div class="why">No. The smol course's floor is about <b>1,000 good pairs</b> for a narrow domain, and 10,000+ for robust alignment. With 50 the plan fails whatever β you set. Use all 12,000.</div>
+    </div>
+    <div class="say" data-say="cap">
+      <div class="tag">Say it out loud</div>
+      <div class="line">Pick the class by the signal the client already has: worked examples mean SFT, preference pairs mean DPO, a checker means GRPO. Then check the data is enough, it fits the machine, and the budget allows it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FIELD TEST ============ -->
+<section id="ft" data-title="Field Test" data-n="✓">
+  <div class="card">
+    <h2>✓ · Field test</h2>
+    <p class="lede">Eight questions, each answered by <b>setting up a widget</b> in steps 2–6 the way the question says and reading off the result. Graded instantly, with rounding tolerance.</p>
+    <div id="ftq"></div>
+    <div class="btnrow"><button class="act" id="ftgo" type="button">Grade me</button><span id="ftscore" class="muted" style="align-self:center"></span></div>
+  </div>
+  <div class="card">
+    <h3>What's exact and what's a teaching model</h3>
+    <p class="lede sm"><b>Exact:</b> the cross-entropy on the probabilities shown; the parameter and LoRA counts, from each model's config.json on the Hub; the 16-bytes-per-parameter accounting (bf16 weights 2 + bf16 gradients 2 + fp32 master 4 + AdamW m and v 8); the DPO loss, implicit reward, margin and sigmoid; the GRPO advantages (sample std + 1e-4, as TRL computes them) and the clipped term; the pass counts per example.</p>
+    <p class="lede sm mt8"><b>Teaching models:</b> the token probabilities in step 2 and the log-probs in step 4 are toy numbers; activation memory is a rough allowance, not a measurement; the "training step" in step 4 is an animation, not an optimizer; the four cooks' outputs in step 0 are illustrative, not generated; the π<sub>old</sub> and π<sub>new</sub> values in step 6 are toy numbers for a reused batch; the costs in step 5 are pass counts read off the losses, not timings. The machines' "usable" memory leaves headroom for the framework (and, on a Mac, macOS's default GPU memory cap). GB means 10⁹ bytes.</p>
+    <p class="lede sm mt8"><b>The formulas are real; the example numbers are chosen to teach, not measured.</b></p>
+  </div>
+  <div class="card">
+    <h3>Where to go deeper</h3>
+    <ul class="srcs">
+      <li><a href="https://poloclub.github.io/unipo/" target="_blank" rel="noopener">UNIPO</a> from Georgia Tech's Polo Club: a beautiful interactive walk through the GRPO family (REINFORCE, PPO, GRPO, DAPO, Dr. GRPO) on real training runs, token by token. The best next stop after step 6.</li>
+      <li>Hugging Face's <i>a smol course</i> and <i>LLM Course</i> ch. 11–12: free notebooks to run SFT, LoRA, DPO and GRPO yourself on a small model.</li>
+      <li>Nathan Lambert's <i>RLHF Book</i>: the full theory behind every formula here, clearly written and free to read online.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Sources</h3>
+    <ul class="srcs">
+      <li>Hugging Face, <i>a smol course</i>, Unit 1 (Chat Templates, Supervised Fine-Tuning, LoRA and PEFT) and Unit 2 (Direct Preference Optimization, DPO Hands-on)</li>
+      <li>Hugging Face, <i>LLM Course</i>, chapter 11 (fine-tuning: templates, SFT, LoRA) and chapter 12 (reasoning models and GRPO, 12.3–12.4)</li>
+      <li>Nathan Lambert, <i>RLHF Book</i>: ch. 3 (training overview), 4 (instruction tuning), 6 (policy gradients), 7 (reasoning), 8 (direct alignment), 15 (regularization)</li>
+      <li>Rafailov et al., "Direct Preference Optimization: Your Language Model is Secretly a Reward Model" (2023)</li>
+      <li>Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models" (2024), which introduced GRPO (trained there with a learned reward model)</li>
+      <li>DeepSeek-AI, "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning" (2025): GRPO with rule-based, checkable rewards</li>
+      <li>Liu et al., "Understanding R1-Zero-Like Training: A Critical Perspective" (2025), which proposed Dr. GRPO</li>
+      <li>Hu et al., "LoRA: Low-Rank Adaptation of Large Language Models" (2021)</li>
+            <li>SmolLM3-3B model card (chat template, <code>enable_thinking</code>, the /think and /no_think flags)</li>
+      <li>TRL documentation and <code>grpo_config.py</code> (<code>GRPOConfig</code> defaults: <code>beta=0.0</code>, <code>epsilon=0.2</code>, <code>num_iterations=1</code>, <code>scale_rewards="group"</code>, <code>loss_type="dapo"</code>; <code>DPOConfig</code>: β defaults to 0.1)</li>
+      <li>Model shapes from each model's config.json on the Hugging Face Hub: SmolLM2-135M, Qwen3-1.7B, SmolLM3-3B</li>
+    </ul>
+    <p class="lede sm">The sibling lab, <a href="https://bakulbadwal.github.io/inference-kitchen/" target="_blank" rel="noopener">Inference Kitchen</a>, covers what happens after training: how a finished model is served.</p>
+    <div class="btnrow"><button class="ghost" id="reset" type="button">Reset my progress</button></div>
+  </div>
+</section>
+</div>
+
+<div id="tip" role="tooltip"></div>
+<footer>Finishing School · built by Bakul Badwal (UVA Darden MBA ’27) with Claude Code · sibling lab: <a href="https://bakulbadwal.github.io/inference-kitchen/" target="_blank" rel="noopener">Inference Kitchen</a> · teaching models, not benchmarks</footer>
+
+<script src="js/art/s0.js"></script>
+<script src="js/art/s1.js"></script>
+<script src="js/art/s2.js"></script>
+<script src="js/art/s3.js"></script>
+<script src="js/art/s4.js"></script>
+<script src="js/art/s5.js"></script>
+<script src="js/art/s6.js"></script>
+<script src="js/art/cap.js"></script>
+<script src="js/glossary.js"></script>
+<script src="js/core.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
