@@ -16,7 +16,9 @@
 
   /* ---------------- persistence (never required) ---------------- */
   var KEY = "finishing-school-v1";
-  var store = { predicts: {}, touched: {}, said: {}, briefs: {}, ft: {}, ladder: {} };
+  var store = { predicts: {}, touched: {}, said: {}, briefs: {}, ft: {}, ladder: {}, meta: {} };
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function longDate(d) { return ("0" + d.getDate()).slice(-2) + " " + MONTHS[d.getMonth()] + " " + d.getFullYear(); }
   try { var raw = localStorage.getItem(KEY); if (raw) { var got = JSON.parse(raw); if (got && typeof got === "object") Object.keys(store).forEach(function (k) { if (got[k] && typeof got[k] === "object") store[k] = got[k]; }); } } catch (e) {}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 
@@ -61,6 +63,7 @@
     try { history.replaceState(null, "", "#" + id); } catch (e) {}
     window.scrollTo(0, 0);
     if (id === "s3") s3fitLabels();
+    if (id === "s0") s0lightFloors();
   }
 
   /* ---------------- engagement: predict + say ---------------- */
@@ -163,6 +166,29 @@
     { id: "sft", floor: "1st floor", name: "Copying Class · SFT", need: "The copying class needs a finished answer to copy, word for word." }
   ];
   var s0 = { sel: null };
+  /* The cutaway answers the widget: when a floor is lit, its painted sign in the scene turns
+     school-bus yellow. The sign is found by geometry (the smallest rect around the floor's name),
+     so the art files stay untouched. */
+  var FLOOR_TEXT = { grpo: "EXAM HALL", dpo: "TASTING ROOM", sft: "COPYING CLASS" };
+  function s0lightFloors() {
+    var svg = document.querySelector("#s0 .scene svg"); if (!svg) return;
+    var texts = qa("text", svg), rects = qa("rect", svg);
+    Object.keys(FLOOR_TEXT).forEach(function (id) {
+      var txt = texts.filter(function (t) { return t.textContent === FLOOR_TEXT[id]; })[0]; if (!txt) return;
+      if (!txt._sign) {
+        var tb = txt.getBoundingClientRect(); if (!tb.width) return;
+        var cx = tb.left + tb.width / 2, cy = tb.top + tb.height / 2, area = Infinity, best = null;
+        rects.forEach(function (r) {
+          var b = r.getBoundingClientRect();
+          if (cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom && b.width * b.height < area && b.width < tb.width * 2.5) { area = b.width * b.height; best = r; }
+        });
+        txt._sign = best || false;
+      }
+      var lit = !!store.ladder[id];
+      txt.classList.toggle("floor-lit", lit);
+      if (txt._sign) txt._sign.classList.toggle("floor-lit", lit);
+    });
+  }
   function s0render() {
     var sigs = $("s0sigs"), rungs = $("s0rungs");
     sigs.innerHTML = ""; rungs.innerHTML = "";
@@ -203,7 +229,7 @@
     var r = RUNGS.filter(function (x) { return x.id === rungId; })[0];
     touch("s0");
     if (sg.rung === rungId) {
-      store.ladder[rungId] = sg.id; save(); s0.sel = null; s0render();
+      store.ladder[rungId] = sg.id; save(); s0.sel = null; s0render(); s0lightFloors();
       var n = Object.keys(store.ladder).length;
       out.innerHTML = n < 3 ? "<b>Lit.</b> " + r.name + " learns from " + sg.label + ". " + (3 - n) + " to go."
         : "<b>All three floors lit.</b> Copying needs answers, comparing needs pairs, the exam needs a score for each answer (here, a checker). A real model usually climbs them in order: SFT first, then DPO or GRPO on top of the SFT checkpoint.";
@@ -262,8 +288,7 @@
         ? "You are a helpful AI assistant named SmolLM, trained by Hugging Face. Your role as an assistant involves thoroughly exploring questions through a systematic thinking process before providing the final precise and accurate solutions. … (the template's long reasoning persona)"
         : "You are a helpful AI assistant named SmolLM, trained by Hugging Face.";
       /* strftime_now("%d %B %Y"), as the template prints it. The cutoff line is a constant in the template. */
-      var d = new Date(), MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      var today = ("0" + d.getDate()).slice(-2) + " " + MON[d.getMonth()] + " " + d.getFullYear();
+      var today = longDate(new Date());
       P.push(T("<|im_start|>", "sp"), T("system", "role"), BR,
         T("## Metadata", "tpl"), BR, T("Knowledge Cutoff Date: June 2025", "tpl"), BR, T("Today Date: " + today, "tpl"), BR,
         T("Reasoning Mode: " + (mode.on ? "/think" : "/no_think"), "think"), BR, BR,
@@ -668,6 +693,19 @@
     var done = capAllDone();
     $("capstamp").hidden = !done;
     if (done && !store.said.cap) { store.said.cap = true; save(); buildNav(); markNav(); }
+    checkDiploma();
+  }
+  /* The diploma: all three clients hired and a field test of 6/8 or better. Dated the first time it's earned. */
+  function checkDiploma() {
+    var card = $("dipcard"); if (!card) return;
+    var ok = capAllDone() && (store.meta.ftBest || 0) >= 6;
+    if (ok && !store.meta.diploma) { var n = new Date(); store.meta.diploma = n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); save(); }   // local date, not UTC
+    card.hidden = !ok;
+    if (ok) {
+      var p = String(store.meta.diploma).split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
+      $("dipdate").textContent = "Awarded " + longDate(d);
+      $("dipscore").textContent = "Field test " + store.meta.ftBest + " / " + FT.length;
+    }
   }
   function capCard(b) {
     var st = capState[b.id] = { method: "sft", model: "smollm3-3b", lora: false, machine: "t4", beta: 4, G: 8, data: "all" };
@@ -764,10 +802,15 @@
         if (ok) score++;
         $("ftr" + i).innerHTML = v === "" ? '<span class="muted">skipped</span>' : ok ? '<span class="ok">✓ right</span>' : '<span class="bad">✗</span> <span class="muted">answer: ' + esc(truth) + "</span>";
       });
+      store.meta.ftBest = Math.max(store.meta.ftBest || 0, score);
       save();
       $("ftscore").innerHTML = "<b>" + score + " / " + FT.length + "</b>" + (score === FT.length ? " · you're finished." : score >= 6 ? " · nearly there." : "");
       if (score >= 6 && !store.said.ft) { store.said.ft = true; save(); buildNav(); markNav(); }
+      checkDiploma();
+      if (!$("dipcard").hidden && score >= 6) $("dipcard").scrollIntoView({ behavior: "smooth", block: "start" });
     };
+    $("dipprint").onclick = function () { window.print(); };
+    checkDiploma();
     $("reset").onclick = function () { try { localStorage.removeItem(KEY); } catch (e) {} try { history.replaceState(null, "", location.pathname); } catch (e) {} location.reload(); };
   }
 

@@ -37,6 +37,8 @@ Written before the build (2026-09-25). Numeric checks are asserted against `wind
 
 - C1 Three client briefs (brand-voice bank bot → SFT; editor A/B headlines → DPO; SQL bot with a checker → GRPO). Each has a known-good plan that passes, and named known-bad plans that fail for the **stated** reason: wrong signal for the method, too few pairs, β too small, G = 1, a model too small to ever solve the task (all-zero groups), doesn't fit the machine (full-weight DPO counts its second, frozen reference copy), paid hardware on a zero budget.
 - C2 A field test of 8 questions answered by operating the widgets, graded automatically.
+- C3 A diploma card appears once all three clients are hired and the best field-test score is 6/8 or better; it carries the local award date and the score, and prints on its own page.
+- C4 In step 0, lighting a floor in the widget turns that floor's painted sign yellow inside the cutaway scene (the sign is found by geometry; the art files are unchanged).
 
 ## D. It works
 

@@ -20,7 +20,7 @@ The model is a young **cook**. SFT is the **copying class**, the chat template i
 | **5 · The day-one photo** | Reference model, cached log-probs, LoRA, group size, the KL switch | What each method costs per example, and why LoRA makes the reference model free |
 | **6 · The exam hall** | A group of plates, a verifier's rewards, the clip ε, the KL leash, and dividing by the group's spread (or not, as Dr. GRPO argues) | **The group is the critic.** A group that all scores the same teaches nothing; dividing by the group's spread can make a trivial gap push as hard as a real one |
 | **★ Graduation** | Three client briefs (a bank's help desk, an agency's headline polisher, a SQL answer bot), graded on method, data, memory and budget | You can make the call, and say why the wrong one fails |
-| **✓ Field test** | Eight questions you answer by operating the widgets | Proof it stuck |
+| **✓ Field test** | Eight questions you answer by operating the widgets | Proof it stuck. Hire all three clients and score 6 or better, and the school issues a printable diploma |
 
 Each step has predict-then-reveal questions and a "say it out loud" line that unlocks once you've played. Every term has a tooltip with its plain meaning and its school equivalent.
 

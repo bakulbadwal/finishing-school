@@ -438,3 +438,35 @@ code{overflow-wrap:anywhere}
 /* sources */
 .srcs{margin:6px 0 10px 20px;font-size:15px}
 .srcs li{margin:4px 0}
+
+/* ---- Finishing School additions, second pass (25 Sep 2026) ---- */
+:root{--chalkboard:#2F4A3A;--chalk:#E9F1E4}
+/* The exam hall's advantage chart is a real chalkboard, like the one in the scene: wood frame, chalk line, chalk labels. */
+.advchart{background:var(--chalkboard);border:4px solid var(--wood);box-shadow:inset 0 0 0 2px var(--line);border-radius:6px}
+.advchart .chalk{border-top:3px dashed var(--chalk)}
+.advchart .chalk span{color:var(--chalk);background:var(--chalkboard)}
+.acol i{border-color:var(--chalk)}
+.acol i.pos{background:var(--grass)}
+.acol i.neg{background:var(--brick)}
+.acol .an{color:var(--chalk)}
+/* Step 0: a lit floor's painted sign turns school-bus yellow inside the cutaway. */
+.scene svg rect.floor-lit{fill:var(--yellow);transition:fill .35s}
+.scene svg text.floor-lit{fill:var(--ink)}
+/* The diploma */
+.dip-card{background:var(--paper)}
+.diploma{background:var(--sheet);border:var(--stroke);border-radius:10px;padding:8px;box-shadow:var(--lift)}
+.dip-in{border:4px double var(--wood);border-radius:6px;padding:20px 22px 16px;text-align:center;background:#FFF6DC;position:relative}
+.dip-school{font:800 34px/1.1 var(--sign);color:var(--brick-d);letter-spacing:.01em}
+.dip-title{font:400 20px/1.2 var(--hand);color:var(--soft);text-transform:uppercase;letter-spacing:.28em;margin-top:2px}
+.dip-body{font:400 16.5px/1.55 var(--body);color:var(--ink);max-width:640px;margin:14px auto 0;text-align:left}
+.dip-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:10px;max-width:640px;margin-left:auto;margin-right:auto}
+.dip-meta{display:flex;flex-direction:column;gap:2px;font:400 17px var(--hand);color:var(--soft);text-align:left}
+.dip-seal{width:78px;height:auto;flex:none;transform:rotate(6deg)}
+.dip-line{margin-top:6px;font:400 17px var(--hand);color:var(--ink);border-top:2px dashed var(--rule);padding-top:10px;max-width:640px;margin-left:auto;margin-right:auto}
+@media(max-width:600px){.dip-school{font-size:28px}.dip-in{padding:16px 14px 12px}.dip-seal{width:64px}}
+@media print{
+  header,nav,footer,#tip,.swipe-hint,section:not(#ft),#ft .card:not(.dip-card),.dip-card .btnrow{display:none!important}
+  section#ft{display:block!important;animation:none!important}
+  body{background:#fff;padding:0}.wrap{max-width:none;padding:0}
+  .dip-card{border:0;box-shadow:none;background:#fff;padding:0}.diploma{box-shadow:none}
+}
