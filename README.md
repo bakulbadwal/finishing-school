@@ -52,7 +52,7 @@ Play it live at the link above, or open `index.html` in a browser. There's no bu
   - token probabilities are toy numbers
   - activation memory is a rough allowance
   - step 4's "training step" animation is illustrative
-  - quoted time and cost figures are quotes
+  - step 5's costs are pass counts read off the losses, not timings
 - **The formulas are real; the example numbers are chosen to teach, not measured.**
 
 [`ACCEPTANCE.md`](ACCEPTANCE.md) lists every number the build was checked against. For example: LoRA r = 16 on Qwen3-1.7B trains 17,432,576 parameters, and a hand-worked GRPO example (four answers, accuracy + format rewards) reproduces to three decimals.

@@ -22,6 +22,7 @@ Written before the build (2026-09-25). Numeric checks are asserted against `wind
 | A13 | Passes per example | SFT 1F+1B · DPO 2F+2B+2 ref F (2 model copies) · DPO with precomputed ref log-probs 2F+2B (1 copy) · DPO + LoRA: ref F still runs, but on the same weights (1 copy) · GRPO G=8: 8 generations + 8F+8B, ref off by default (TRL β = 0) · GRPO β > 0: +8 ref F |
 | A15 | Std scaling on vs off (the std half of Dr. GRPO), the lowest plate | near-tie [1,1,1,0.9] (all right, one slightly messier): **−1.50** with std scaling vs **−0.075** without · real split [1,0,1,0]: **−0.87** vs **−0.50**. With std scaling a trivial 0.1 gap pushes harder than a real right/wrong gap |
 | A14 | SmolLM3 thinking switch | system `/no_think` + `enable_thinking=True` → **off** (flag wins) · keyword False, no flag → off · nothing set → on |
+| A16 | SmolLM3 ticket, no tools (checked against the model's `chat_template.jinja` and the course's printed renders, 25 Sep 2026) | the system block is **not** closed with `<|im_end|>`; the template only emits that inside its tools branch. Special tokens on the ticket: **4** with thinking on, **6** with thinking off (`<think>`, `</think>` are registered special tokens), one more with a tool |
 
 ## B. It teaches (every step)
 
@@ -45,4 +46,4 @@ Written before the build (2026-09-25). Numeric checks are asserted against `wind
 - D4 Styling follows the recorded design system in `DESIGN.md` (inherited from Inference Kitchen: Busytown cutaway, warm paper, one brown outline, Grandstander / Patrick Hand / Andika).
 - D5 Progress persists across reloads (localStorage, wrapped so it degrades safely).
 - D6 One illustrated 960×400 cutaway scene per step (0–6) and the capstone, every object labelled.
-- D7 A fresh-context adversarial review finds no open correctness issue. (Run 25 Sep 2026: a correctness review found 1 blocker, 7 major and 7 minor issues, and a design finish review found 8 material fixes; all were fixed and re-verified in the browser.)
+- D7 A fresh-context adversarial review finds no open correctness issue. (Run 25 Sep 2026: a correctness review found 1 blocker, 7 major and 7 minor issues, and a design finish review found 8 material fixes; all were fixed and re-verified in the browser. A second cold read by a different model, later that day, found the step-1 template quirk in A16 and the special-token undercount; both fixed.)

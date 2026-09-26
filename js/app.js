@@ -257,16 +257,25 @@
     if (s1.dia === "smol") {
       var mode = FS.thinkingMode({ system: sys, enableThinking: think });
       var custom = sys.replace(/\/no_think\b/g, "").replace(/\/think\b/g, "").replace(/\s+$/, "").replace(/^\s+/, "");
-      if (!custom) custom = "You are a helpful AI assistant named SmolLM, trained by Hugging Face.";
+      /* The template's own defaults: a long reasoning persona in /think mode, a one-liner in /no_think. */
+      if (!custom) custom = mode.on
+        ? "You are a helpful AI assistant named SmolLM, trained by Hugging Face. Your role as an assistant involves thoroughly exploring questions through a systematic thinking process before providing the final precise and accurate solutions. … (the template's long reasoning persona)"
+        : "You are a helpful AI assistant named SmolLM, trained by Hugging Face.";
+      /* strftime_now("%d %B %Y"), as the template prints it. The cutoff line is a constant in the template. */
+      var d = new Date(), MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      var today = ("0" + d.getDate()).slice(-2) + " " + MON[d.getMonth()] + " " + d.getFullYear();
       P.push(T("<|im_start|>", "sp"), T("system", "role"), BR,
-        T("## Metadata", "tpl"), BR, T("Knowledge Cutoff Date: …", "tpl"), BR, T("Today Date: …", "tpl"), BR,
+        T("## Metadata", "tpl"), BR, T("Knowledge Cutoff Date: June 2025", "tpl"), BR, T("Today Date: " + today, "tpl"), BR,
         T("Reasoning Mode: " + (mode.on ? "/think" : "/no_think"), "think"), BR, BR,
         T("## Custom Instructions", "tpl"), BR, T(custom, "tx"), BR);
+      /* Quirk, verified against the model's chat_template.jinja: the closing <|im_end|> of the system
+         block is only emitted inside the tools branch. With no tools, the user turn follows directly. */
       if (tool) P.push(BR, T("### Tools", "tool"), BR, T("<tools>", "tool"), BR, T("{'name': 'get_weather', 'parameters': {'location': …}}", "tool"), BR, T("</tools>", "tool"), BR,
-        T("Return each call as {\"name\": …, \"arguments\": …} inside <tool_call></tool_call>", "tpl"), BR);
-      P.push(T("<|im_end|>", "sp"), BR, T("<|im_start|>", "sp"), T("user", "role"), BR, T(user, "tx"), T("<|im_end|>", "sp"), BR,
+        T("Return each call as {\"name\": …, \"arguments\": …} inside <tool_call></tool_call>", "tpl"), BR, T("<|im_end|>", "sp"), BR);
+      else P.push(T("(no <|im_end|> here: without tools, the template leaves the system block open)", "note"), BR);
+      P.push(T("<|im_start|>", "sp"), T("user", "role"), BR, T(user, "tx"), T("<|im_end|>", "sp"), BR,
         T("<|im_start|>", "sp"), T("assistant", "role"), BR);
-      if (!mode.on) P.push(T("<think>", "think"), BR, BR, T("</think>", "think"), BR, T("(the cook answers directly from here)", "note"));
+      if (!mode.on) P.push(T("<think>", "spt"), BR, BR, T("</think>", "spt"), BR, T("(the cook answers directly from here)", "note"));
       else P.push(T("(the cook writes <think> … </think>, then the answer)", "note"));
       return { P: P, mode: mode };
     }
@@ -283,7 +292,7 @@
     var r = s1pieces(), n = 0;
     $("s1strip").innerHTML = r.P.map(function (p) {
       if (p.br) return '<span class="br"></span>';
-      if (p.k === "sp") n++;
+      if (p.k === "sp" || p.k === "spt") n++;   // <think> and </think> are registered special tokens too
       return '<span class="tok k-' + p.k + '">' + esc(p.t) + "</span>";
     }).join("");
     var sys = $("s1sys").value, think = $("s1think").checked;
@@ -297,8 +306,9 @@
       note += "<b>Llama 3.1</b> prints roles between <code>&lt;|start_header_id|&gt;</code> and <code>&lt;|end_header_id|&gt;</code> and ends every turn with <code>&lt;|eot_id|&gt;</code>. It has no thinking switch: <code>enable_thinking</code> is ignored, and a <code>/no_think</code> in the system box is just text to this model. The readout above is what <i>SmolLM3</i> would do with the same settings." + ($("s1tool").checked ? " Tools go in the first <b>user</b> turn, with <code>Environment: ipython</code> in the system box." : "");
     } else {
       note += "<b>SmolLM3</b> is ChatML-style: <code>&lt;|im_start|&gt;role</code> … <code>&lt;|im_end|&gt;</code>. The template writes its own <b>## Metadata</b> block, including the reasoning mode, then puts your system text under <b>## Custom Instructions</b> (with the flag taken out). " +
-        (m.on ? "Thinking is on, so the assistant turn is left open and the cook writes its reasoning inside <code>&lt;think&gt;</code> first." : "Thinking is off, so the template closes an <b>empty</b> think box before the answer: the model reads \"thinking already happened\" and answers directly.") +
-        ($("s1tool").checked ? " Tools land in the <b>system block</b> under ### Tools, inside <code>&lt;tools&gt;&lt;/tools&gt;</code>." : "");
+        (m.on ? "Thinking is on, so the assistant turn is left open and the cook writes its reasoning inside <code>&lt;think&gt;</code> first." : "Thinking is off, so the template closes an <b>empty</b> think box before the answer: the model reads \"thinking already happened\" and answers directly. <code>&lt;think&gt;</code> and <code>&lt;/think&gt;</code> are special tokens in SmolLM3's vocabulary, so they count above.") +
+        ($("s1tool").checked ? " Tools land in the <b>system block</b> under ### Tools, inside <code>&lt;tools&gt;&lt;/tools&gt;</code>, and only then does the block close with <code>&lt;|im_end|&gt;</code>."
+          : " <b>Quirk:</b> with no tools, SmolLM3's template never closes the system block with <code>&lt;|im_end|&gt;</code>; the user turn starts straight after the custom instructions. That's how the model was trained, so serve it the same way. Switch the tool on and the <code>&lt;|im_end|&gt;</code> appears.");
       if (/\/(no_)?think\b/.test(sys) && ((m.on && !think) || (!m.on && think))) note += " <b>Notice:</b> the flag in the system box overrode the <code>enable_thinking</code> keyword.";
     }
     $("s1note").innerHTML = note;
@@ -692,7 +702,7 @@
       if (st.method === "dpo") plan.beta = CAP_BETAS[st.beta];
       if (st.method === "grpo") plan.G = st.G;
       var r = FS.scorePlan(b.brief(st), plan), x = machine(st.machine);
-      var memRow = '<div class="check ' + (r.memGB <= x.usable ? "ok" : "no") + '"><span class="ic">' + (r.memGB <= x.usable ? "✓" : "✗") + "</span><div>Estimated training memory: " + fgb(r.memGB) + '<div class="why">' + esc(mLabel(x)) + " has about " + x.usable + " GB usable. " + (st.lora ? "LoRA r = 16 on all seven modules." : "Full fine-tune at 16 bytes per parameter" + (st.method === "dpo" ? ", plus a second, frozen bf16 copy of the model as DPO's reference." : ".")) + "</div></div></div>";
+      var memRow = '<div class="check ' + (r.memGB <= x.usable ? "ok" : "no") + '"><span class="ic">' + (r.memGB <= x.usable ? "✓" : "✗") + "</span><div>Estimated training memory: " + fgb(r.memGB) + '<div class="why">' + esc(mLabel(x)) + " has about " + x.usable + " GB usable. " + (st.lora ? "LoRA r = 16 on all seven modules." : "Full fine-tune at 16 bytes per parameter" + (st.method === "dpo" ? ", plus a second, frozen bf16 copy of the model as DPO's reference." : ".")) + (st.method === "grpo" ? " The KV cache for the G sampled answers isn't counted." : "") + "</div></div></div>";
       var res = q('[data-o="res"]');
       if (r.pass) {
         res.innerHTML = '<div class="stampbox"><span class="stamp2">Hired</span></div>' +

@@ -308,6 +308,7 @@ code{overflow-wrap:anywhere}
 .tok.k-tpl{background:#FFF6DC;color:var(--soft);border-style:dashed}
 .tok.k-tx{background:var(--sheet);color:var(--ink);border-color:var(--line)}
 .tok.k-think,.tok.k-tool{background:var(--lilac);color:var(--ink);border-color:var(--line)}
+.tok.k-spt{background:var(--lilac);color:var(--ink);border:2px solid var(--brick);font-family:ui-monospace,Menlo,monospace;font-size:13.5px}
 .tok.k-note{background:transparent;border:0;color:var(--soft);font-style:italic}
 
 /* step 2 · the red pen */
