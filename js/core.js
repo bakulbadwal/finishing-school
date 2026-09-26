@@ -124,6 +124,12 @@
       gradWeight: sigmoid(-margin)                   // how hard this pair still pushes (→0 once learned)
     };
   }
+  /* A reward model's view of the same pair (Bradley–Terry, as TRL's RewardTrainer trains it):
+     P(chosen wins) = σ(score_chosen − score_rejected). Only the difference of the scores matters. */
+  function rewardPair(rc, rr) {
+    var delta = rc - rr;
+    return { delta: delta, prob: sigmoid(delta), loss: Math.log1p(Math.exp(-delta)) };
+  }
   function dpoBatch(pairs, beta) {
     var acc = 0, mSum = 0, lSum = 0;
     pairs.forEach(function (p) {
@@ -216,7 +222,7 @@
     model: model, projections: projections, paramCount: paramCount,
     thinkingMode: thinkingMode, sftLoss: sftLoss,
     loraParams: loraParams, activationGB: activationGB, trainMemory: trainMemory, fits: fits,
-    sigmoid: sigmoid, dpo: dpo, dpoBatch: dpoBatch, passes: passes,
+    sigmoid: sigmoid, dpo: dpo, rewardPair: rewardPair, dpoBatch: dpoBatch, passes: passes,
     grpoAdvantages: grpoAdvantages, grpoTerm: grpoTerm, scorePlan: scorePlan
   };
 })();

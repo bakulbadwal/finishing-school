@@ -527,7 +527,24 @@
     $("s4ml").textContent = fmt(b.meanLoss, 3);
     $("s4steps").textContent = s4.steps ? s4.steps + " step" + (s4.steps > 1 ? "s" : "") + " taken at β = " + beta : "β = " + beta;
   }
+  /* The judge's scorecard: a reward model on the same pair. Same Bradley–Terry loss as DPO. */
+  function s4jRender() {
+    var c = +$("s4jc").value, r = +$("s4jr").value, d = FS.rewardPair(c, r);
+    $("s4jcv").textContent = sgn(c, 1); $("s4jrv").textContent = sgn(r, 1);
+    $("s4jd").textContent = sgn(d.delta, 2); $("s4jp").textContent = fmt(d.prob, 3); $("s4jl").textContent = fmt(d.loss, 3);
+    $("s4jnote").innerHTML = "loss = −ln σ(" + sgn(c, 1) + " − " + (r < 0 ? "(" + sgn(r, 1) + ")" : sgn(r, 1)) + ") = −ln σ(" + sgn(d.delta, 2) + ") = <b>" + fmt(d.loss, 3) + "</b>. " +
+      (Math.abs(d.delta) < 1e-9 ? "<b>Equal scores:</b> the judge is guessing, σ(0) = 0.5 and the loss is ln 2 = 0.693, the same starting point as DPO's."
+        : d.delta > 0 ? "The judge agrees with the taster. A bigger gap is a more confident judge and a smaller loss; the push on the scores fades as the gap grows."
+        : "The judge prefers the rejected plate, so the loss is above ln 2 and training pushes the two scores apart the other way.");
+  }
   function initS4() {
+    ["s4jc", "s4jr"].forEach(function (id) { $(id).oninput = s4jRender; $(id).onchange = function () { touch("s4"); }; });
+    $("s4jsame").onclick = function () { $("s4jr").value = $("s4jc").value; s4jRender(); touch("s4"); };
+    $("s4jshift").onclick = function () {
+      var c = +$("s4jc").value, r = +$("s4jr").value, k = Math.max(c, r) + 2 <= 5 ? 2 : -2;   // stay inside the sliders' range
+      $("s4jc").value = c + k; $("s4jr").value = r + k; s4jRender(); touch("s4");
+    };
+    s4jRender();
     ["s4pc", "s4rc", "s4pr", "s4rr", "s4b"].forEach(function (id) {
       $(id).oninput = function () { s4render(); s4batchRender(); };
       $(id).onchange = function () { touch("s4"); };
@@ -836,7 +853,10 @@
   qa(".kmap .k[data-i]").forEach(function (el) { el.innerHTML = ICONS[el.dataset.i] || ""; });
   buildNav();
   initPredicts();
-  initS0(); initS1(); initS2(); initS3(); initS4(); initS5(); initS6(); initCap(); initFT();
+  /* Each step boots on its own, so one failing panel can't blank the whole page. */
+  [initS0, initS1, initS2, initS3, initS4, initS5, initS6, initCap, initFT].forEach(function (init) {
+    try { init(); } catch (e) { if (window.console) console.error("Finishing School: a step failed to start", e); }
+  });
   bindTips(document);
   sections.forEach(function (s) { checkSay(s.id); });
   function hashId() { return (location.hash || "").replace(/^#\/?/, ""); }

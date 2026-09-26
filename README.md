@@ -16,7 +16,7 @@ The model is a young **cook**. SFT is the **copying class**, the chat template i
 | **1 · The order ticket** | A live chat-template render: dialect, `enable_thinking`, `/think` flags, tools | The template is the model's grammar. **On SmolLM3 the system-prompt flag beats the keyword** |
 | **2 · Grading the answer** | Per-token probabilities and the completion-only mask | SFT is next-token cross-entropy, and **the mask decides what the model is graded on** |
 | **3 · Sticky notes** | Model, LoRA rank, target modules, sequence length, checkpointing; fit on a Mac, a free T4, an RTX 3060, rented GPUs | LoRA trains ~1% of a 2–3B model at rank 16; full fine-tuning costs ~16 bytes per parameter, so **a 3B full fine-tune fits none of them and LoRA fits all** |
-| **4 · The tasting room** | The four log-probabilities and β behind one DPO pair; a batch of eight pairs | **DPO's reward is implicit**, its loss starts at **ln 2 = 0.693**, and **higher β is a shorter leash** |
+| **4 · The tasting room** | A reward model's scorecard for one pair, then the four log-probabilities and β behind DPO's version of it; a batch of eight pairs | Both use the same Bradley–Terry loss. **DPO's reward is implicit**, its loss starts at **ln 2 = 0.693**, and **higher β is a shorter leash** |
 | **5 · The day-one photo** | Reference model, cached log-probs, LoRA, group size, the KL switch | What each method costs per example, and why LoRA makes the reference model free |
 | **6 · The exam hall** | A group of plates, a verifier's rewards, the clip ε, the KL leash, and dividing by the group's spread (or not, as Dr. GRPO argues) | **The group is the critic.** A group that all scores the same teaches nothing; dividing by the group's spread can make a trivial gap push as hard as a real one |
 | **★ Graduation** | Three client briefs (a bank's help desk, an agency's headline polisher, a SQL answer bot), graded on method, data, memory and budget | You can make the call, and say why the wrong one fails |
@@ -61,7 +61,7 @@ Play it live at the link above, or open `index.html` in a browser. There's no bu
 
 - Hugging Face, [*a smol course*](https://huggingface.co/learn/smol-course), Units 1–2 (instruction tuning, preference alignment)
 - Hugging Face, [*LLM Course*](https://huggingface.co/learn/llm-course), chapter 11 (fine-tuning) and chapter 12 (reasoning models, GRPO)
-- Nathan Lambert, [*RLHF Book*](https://rlhfbook.com): ch. 4, 6, 7, 8, 15
+- Nathan Lambert, [*RLHF Book*](https://rlhfbook.com): ch. 4, 5, 6, 7, 8, 15
 - Rafailov et al., "Direct Preference Optimization" (2023) · Shao et al., "DeepSeekMath" (2024, GRPO) · Liu et al., "Understanding R1-Zero-Like Training" (2025, Dr. GRPO) · Hu et al., "LoRA" (2021)
 - The SmolLM3-3B model card, and the TRL documentation (`GRPOConfig` defaults)
 

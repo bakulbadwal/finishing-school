@@ -22,6 +22,7 @@ Written before the build (2026-09-25). Numeric checks are asserted against `wind
 | A13 | Passes per example | SFT 1F+1B · DPO 2F+2B+2 ref F (2 model copies) · DPO with precomputed ref log-probs 2F+2B (1 copy) · DPO + LoRA: ref F still runs, but on the same weights (1 copy) · GRPO G=8: 8 generations + 8F+8B, ref off by default (TRL β = 0) · GRPO β > 0: +8 ref F |
 | A15 | Std scaling on vs off (the std half of Dr. GRPO), the lowest plate | near-tie [1,1,1,0.9] (all right, one slightly messier): **−1.50** with std scaling vs **−0.075** without · real split [1,0,1,0]: **−0.87** vs **−0.50**. With std scaling a trivial 0.1 gap pushes harder than a real right/wrong gap |
 | A14 | SmolLM3 thinking switch | system `/no_think` + `enable_thinking=True` → **off** (flag wins) · keyword False, no flag → off · nothing set → on |
+| A17 | Reward model scorecard (Bradley–Terry) | equal scores → loss **ln 2 = 0.6931** · scores +1 / −0.5 → Δ 1.5, P(chosen wins) 0.818, loss **0.201** · adding the same constant to both scores changes nothing |
 | A16 | SmolLM3 ticket, no tools (checked against the model's `chat_template.jinja` and the course's printed renders, 25 Sep 2026) | the system block is **not** closed with `<|im_end|>`; the template only emits that inside its tools branch. Special tokens on the ticket: **4** with thinking on, **6** with thinking off (`<think>`, `</think>` are registered special tokens), one more with a tool |
 
 ## B. It teaches (every step)

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Grandstander:wght@700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=20260925c">
 </head>
 <body>
 <!--
@@ -228,7 +228,32 @@ STORY: meet the school, then work its order ticket, red pen, sticky notes, tasti
     <div class="scene" data-art="s4"></div>
     <h2>4 · The tasting room: DPO</h2>
     <p class="lede">In <span class="g" data-g="dpo">DPO</span> a taster puts two plates side by side and points at the better one: a <span class="g" data-g="pair">preference pair</span>. There's no scorecard. The reward is <span class="g" data-g="implicit">implicit</span>: <b>β × how much more likely the cook now makes a plate than the <span class="g" data-g="reference">day-one photo</span> would have</b>. Each input below is a sequence <span class="g" data-g="logprob">log-probability</span> (the sum over the answer's tokens, so a negative number).</p>
-    <p class="covers">Covers <b>smol Unit 2 · Direct Preference Optimization</b> · <b>RLHF Book ch. 8</b> · <b>DPO paper</b> (Rafailov et al. 2023)</p>
+    <p class="covers">Covers <b>smol Unit 2 · Direct Preference Optimization</b> · <b>RLHF Book ch. 5 &amp; 8</b> · <b>DPO paper</b> (Rafailov et al. 2023)</p>
+  </div>
+  <div class="card">
+    <h3>Before the tasting room: the judge's scorecard <span class="muted h3note">(a reward model)</span></h3>
+    <p class="lede sm">The older route to preferences trains a separate <span class="g" data-g="rewardmodel">reward model</span>: a judge who gives every plate a score. It learns from the same pairs with the Bradley–Terry loss: the chance the chosen plate wins is σ(score<sub>chosen</sub> − score<sub>rejected</sub>), and the loss is −ln of that chance. Slide the two scores.</p>
+    <div class="pg">
+      <div class="panel">
+        <div class="sl"><div class="sl-h"><span>Judge's score: chosen plate ★</span><b id="s4jcv"></b></div><input type="range" id="s4jc" min="-5" max="5" step="0.5" value="1" aria-label="Reward model score for the chosen plate"></div>
+        <div class="sl"><div class="sl-h"><span>Judge's score: rejected plate ✗</span><b id="s4jrv"></b></div><input type="range" id="s4jr" min="-5" max="5" step="0.5" value="-0.5" aria-label="Reward model score for the rejected plate"></div>
+        <div class="btnrow"><button class="ghost" id="s4jsame" type="button">Same score for both</button><button class="ghost" id="s4jshift" type="button">Shift both by the same amount</button></div>
+      </div>
+      <div>
+        <div class="grid g3">
+          <div class="stat big"><div class="v acc" id="s4jd"></div><div class="l">score gap Δ</div></div>
+          <div class="stat"><div class="v" id="s4jp"></div><div class="l">P(chosen wins) = σ(Δ)</div></div>
+          <div class="stat big"><div class="v gold" id="s4jl"></div><div class="l">loss = −ln σ(Δ)</div></div>
+        </div>
+        <div class="callout co-i" id="s4jnote"></div>
+      </div>
+    </div>
+    <div class="predict" data-p="s4c">
+      <div class="tag">Guess first!</div>
+      <div class="q">Shift both plates' scores by the same amount. What happens to the loss?</div>
+      <div class="opts"><button data-a="0">It goes down</button><button data-a="1" data-right>Nothing</button><button data-a="2">It goes up</button></div>
+      <div class="why">Nothing. Only the <b>difference</b> between the two scores enters the loss, so a judge's scale has no zero point: scores are comparisons, not grades. DPO below keeps this exact loss and swaps the judge's score for β × the log-ratio against the day-one photo. That's why it can drop the judge: the model's own log-ratios already give a score gap.</div>
+    </div>
   </div>
   <div class="card">
     <div class="pg">
@@ -482,7 +507,7 @@ STORY: meet the school, then work its order ticket, red pen, sticky notes, tasti
     <ul class="srcs">
       <li>Hugging Face, <i>a smol course</i>, Unit 1 (Chat Templates, Supervised Fine-Tuning, LoRA and PEFT) and Unit 2 (Direct Preference Optimization, DPO Hands-on)</li>
       <li>Hugging Face, <i>LLM Course</i>, chapter 11 (fine-tuning: templates, SFT, LoRA) and chapter 12 (reasoning models and GRPO, 12.3–12.4)</li>
-      <li>Nathan Lambert, <i>RLHF Book</i>: ch. 3 (training overview), 4 (instruction tuning), 6 (policy gradients), 7 (reasoning), 8 (direct alignment), 15 (regularization)</li>
+      <li>Nathan Lambert, <i>RLHF Book</i>: ch. 3 (training overview), 4 (instruction tuning), 5 (reward models), 6 (policy gradients), 7 (reasoning), 8 (direct alignment), 15 (regularization)</li>
       <li>Rafailov et al., "Direct Preference Optimization: Your Language Model is Secretly a Reward Model" (2023)</li>
       <li>Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models" (2024), which introduced GRPO (trained there with a learned reward model)</li>
       <li>DeepSeek-AI, "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning" (2025): GRPO with rule-based, checkable rewards</li>
@@ -501,16 +526,16 @@ STORY: meet the school, then work its order ticket, red pen, sticky notes, tasti
 <div id="tip" role="tooltip"></div>
 <footer>Finishing School · built by Bakul Badwal (UVA Darden MBA ’27) with Claude Code · sibling lab: <a href="https://bakulbadwal.github.io/inference-kitchen/" target="_blank" rel="noopener">Inference Kitchen</a> · teaching models, not benchmarks</footer>
 
-<script src="js/art/s0.js"></script>
-<script src="js/art/s1.js"></script>
-<script src="js/art/s2.js"></script>
-<script src="js/art/s3.js"></script>
-<script src="js/art/s4.js"></script>
-<script src="js/art/s5.js"></script>
-<script src="js/art/s6.js"></script>
-<script src="js/art/cap.js"></script>
-<script src="js/glossary.js"></script>
-<script src="js/core.js"></script>
-<script src="js/app.js"></script>
+<script src="js/art/s0.js?v=20260925c"></script>
+<script src="js/art/s1.js?v=20260925c"></script>
+<script src="js/art/s2.js?v=20260925c"></script>
+<script src="js/art/s3.js?v=20260925c"></script>
+<script src="js/art/s4.js?v=20260925c"></script>
+<script src="js/art/s5.js?v=20260925c"></script>
+<script src="js/art/s6.js?v=20260925c"></script>
+<script src="js/art/cap.js?v=20260925c"></script>
+<script src="js/glossary.js?v=20260925c"></script>
+<script src="js/core.js?v=20260925c"></script>
+<script src="js/app.js?v=20260925c"></script>
 </body>
 </html>
