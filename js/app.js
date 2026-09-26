@@ -60,7 +60,9 @@
     markNav();
     var active = document.querySelector("#nav button.on"), nav = $("nav");
     if (active && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
-    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    /* The hash is written as #/s3, not #s3: no element has the id "/s3", so the browser never performs
+       its own fragment jump (which Chrome re-applies on the first layout after load, when the fonts land). */
+    try { history.replaceState(null, "", "#/" + id); } catch (e) {}
     window.scrollTo(0, 0);
     if (id === "s3") s3fitLabels();
     if (id === "s0") s0lightFloors();
@@ -837,16 +839,25 @@
   initS0(); initS1(); initS2(); initS3(); initS4(); initS5(); initS6(); initCap(); initFT();
   bindTips(document);
   sections.forEach(function (s) { checkSay(s.id); });
-  var start = (location.hash || "").replace("#", "");
-  show($(start) && $(start).tagName === "SECTION" ? start : "s0");
+  function hashId() { return (location.hash || "").replace(/^#\/?/, ""); }
+  var start = hashId(), legacyHash = !!location.hash && location.hash.indexOf("#/") !== 0;
+  var startOk = !!($(start) && $(start).tagName === "SECTION");
+  /* A legacy #s3 link is rewritten to #/s3 before parsing finishes, so the browser's later
+     fragment-jump attempts find no target. */
+  if (legacyHash) { try { history.replaceState(null, "", location.pathname + location.search + (startOk ? "#/" + start : "")); } catch (e) {} }
+  show(startOk ? start : "s0");
   try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (e) {}
-  // The URL hash matches a section id, so the browser performs its own fragment jump after load,
-  // after show() has already scrolled to the top. Undo it once the page has settled.
-  window.addEventListener("load", function () {
-    setTimeout(function () { window.scrollTo(0, 0); }, 0);
-  });
+  if (legacyHash && startOk) {
+    /* Fallback for a jump the browser had already queued before this script ran: Chrome applies it on
+       the first layout after load (typically when the web fonts arrive), so reset once after that. */
+    window.addEventListener("load", function () {
+      var top = function () { window.scrollTo(0, 0); };
+      setTimeout(top, 0);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { requestAnimationFrame(function () { requestAnimationFrame(top); }); });
+    });
+  }
   window.addEventListener("hashchange", function () {
-    var id = (location.hash || "").replace("#", "");
+    var id = hashId();
     if ($(id) && $(id).tagName === "SECTION" && !$(id).classList.contains("on")) show(id);
   });
   window.FSApp = { show: show, BRIEFS: BRIEFS, FT: FT };
