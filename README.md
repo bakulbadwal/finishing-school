@@ -6,6 +6,10 @@
 
 ![Finishing School: a Busytown-style cross-section of the school, one floor per training method](docs/hero.png)
 
+![Step 6, the exam hall: four GRPO answers get fixed one by one until every plate scores the same and every advantage drops to zero](docs/linkedin/finishing-school-carousel.gif)
+
+*Step 6 in motion: the group is the critic. Once every plate scores the same, no plate moves the cook.*
+
 The model is a young **cook**. SFT is the **copying class**, the chat template is the **order ticket**, the loss mask is the **red pen that grades only the answer**, LoRA is **sticky notes on the recipe book**, DPO is the **tasting room**, the reference model is **the cook's photo from day one** (β is the length of the leash), and GRPO is the **exam hall**, where a thermometer marks every plate. Hold that picture and the rest follows.
 
 ## What's inside
